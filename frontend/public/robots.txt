@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /api/
+
+# As páginas /presente/<slug> são PRIVADAS POR LINK e protegidas por
+# "noindex, nofollow" (meta tag na página e header X-Robots-Tag na API).
+# Por isso NÃO bloqueamos o rastreamento delas aqui: o robô precisa acessar
+# a página para ler a diretiva noindex. Páginas bloqueadas por robots.txt
+# podem ainda assim aparecer na busca (sem resumo) se outros sites linkarem.
+# Não há sitemap de presentes e nenhum link para eles no site — não existe
+# catálogo público.
