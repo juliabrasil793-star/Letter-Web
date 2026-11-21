@@ -738,7 +738,7 @@ function GiftCanvas({
                       />
                     )}
                     {element.type === 'sticker' && (
-                      <span className="canvas-sticker" style={{ color: element.color || '#f349a5' }} role="img" aria-label="Adorno">
+                      <span className="canvas-sticker" role="img" aria-label="Adorno">
                         <AdornmentIcon
                           id={element.content}
                           styleType={element.adornmentStyle || 'monochrome'}

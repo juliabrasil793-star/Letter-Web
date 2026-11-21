@@ -5,7 +5,6 @@ function AdornmentLibrary({
   onChoose,
   activeId,
   style,
-  color,
 }) {
   // Galeria única: todos os adornos PNG juntos, sem categorias ou filtros.
   return (
@@ -16,7 +15,6 @@ function AdornmentLibrary({
             type="button"
             key={adornment.id}
             className={(activeId || '') === adornment.id ? 'active' : ''}
-            style={{ color }}
             onClick={() => onChoose(adornment.id, style)}
             aria-label={`Adicionar ${adornment.label}`}
             title={adornment.label}

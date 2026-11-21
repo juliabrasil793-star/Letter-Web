@@ -7,7 +7,7 @@ import AdornmentLibrary from './AdornmentLibrary.jsx'
 import boxModels from './boxModels.js'
 
 const colors = ['#FFF4E8', '#FAD5E8', '#B9A0E8', '#A9DCCB', '#A9D9F5', '#F6A77D', '#FFCE12']
-const stickerColors = ['#f349a5', '#b9a0e8', '#f6a77d', '#ffce12', '#a9dccb', '#3a3036', '#ffffff']
+
 
 const openingEffects = [
   { value: 'confetti', label: 'Confetes' },
@@ -603,12 +603,6 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
                   </button>
                 ))}
               </div>
-              <label className="field-label" htmlFor="gift-box-color">Cor da caixa</label>
-              <input id="gift-box-color" className="property-color" type="color" value={gift.unwrapping.boxColor} onChange={(event) => updateUnwrapping({ boxColor: event.target.value })} />
-              <label className="field-label" htmlFor="gift-ribbon-color">Cor da fita</label>
-              <input id="gift-ribbon-color" className="property-color" type="color" value={gift.unwrapping.ribbonColor} onChange={(event) => updateUnwrapping({ ribbonColor: event.target.value })} />
-              <label className="field-label" htmlFor="gift-bow-color">Cor do laço</label>
-              <input id="gift-bow-color" className="property-color" type="color" value={gift.unwrapping.bowColor} onChange={(event) => updateUnwrapping({ bowColor: event.target.value })} />
               <label className="field-label" htmlFor="gift-opening-effect">Efeito da abertura</label>
               <select id="gift-opening-effect" className="text-input" value={gift.unwrapping.effect} onChange={(event) => updateUnwrapping({ effect: event.target.value })}>
                 {openingEffects.map((effect) => <option key={effect.value} value={effect.value}>{effect.label}</option>)}
@@ -646,7 +640,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
             <>
               <span className="field-label">Adicionar elementos</span>
               <div className="tool-buttons">
-            <button type="button" onClick={() => addElement({ type: 'sticker', content: 'heart', color: '#f349a5' })}><span className="tool-icon tool-yellow"><AdornmentIcon id="heart" /></span><span><strong>Adorno</strong><small>Adicionar um ícone</small></span><b>+</b></button>
+            <button type="button" onClick={() => addElement({ type: 'sticker', content: 'heart' })}><span className="tool-icon tool-yellow"><AdornmentIcon id="heart" /></span><span><strong>Adorno</strong><small>Adicionar um ícone</small></span><b>+</b></button>
               </div>
               <div className="editor-tool-section" id="adornment-library">
                 <span className="field-label">Biblioteca de adornos</span>
@@ -655,7 +649,6 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
                     type: 'sticker',
                     content: id,
                     adornmentStyle,
-                    color: '#f349a5',
                   })}
                 />
               </div>
@@ -789,12 +782,6 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
                     </button>
                   ))}
                 </div>
-                <label className="field-label" htmlFor="gift-box-color">Cor da caixa</label>
-                <input id="gift-box-color" className="property-color" type="color" value={gift.unwrapping.boxColor} onChange={(event) => updateUnwrapping({ boxColor: event.target.value })} />
-                <label className="field-label" htmlFor="gift-ribbon-color">Cor da fita</label>
-                <input id="gift-ribbon-color" className="property-color" type="color" value={gift.unwrapping.ribbonColor} onChange={(event) => updateUnwrapping({ ribbonColor: event.target.value })} />
-                <label className="field-label" htmlFor="gift-bow-color">Cor do laço</label>
-                <input id="gift-bow-color" className="property-color" type="color" value={gift.unwrapping.bowColor} onChange={(event) => updateUnwrapping({ bowColor: event.target.value })} />
                 <label className="field-label" htmlFor="gift-opening-effect">Efeito da abertura</label>
                 <select
                   id="gift-opening-effect"
@@ -983,35 +970,11 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
               )}
               {selectedElement.type === 'sticker' && (
                 <>
-                  <label className="field-label" htmlFor="sticker-custom-color">Cor do adorno</label>
-                  <div className="color-options" role="group" aria-label="Cores do adorno">
-                    {stickerColors.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        className={`color-swatch${(selectedElement.color || '#f349a5') === color ? ' active' : ''}`}
-                        style={{ backgroundColor: color }}
-                        aria-label={`Usar cor ${color}`}
-                        onClick={() => updateElement(selectedId, { color })}
-                      />
-                    ))}
-                  </div>
-                  <label className="custom-color-label" htmlFor="sticker-custom-color">
-                    Escolher outra cor
-                    <input
-                      id="sticker-custom-color"
-                      type="color"
-                      value={selectedElement.color || '#f349a5'}
-                      onChange={(event) => updateElement(selectedId, { color: event.target.value })}
-                    />
-                  </label>
-
                   <span className="field-label" style={{ marginTop: '14px' }}>Trocar modelo do adorno</span>
                   <AdornmentLibrary
                     key={selectedElement.id}
                     activeId={selectedElement.content || 'heart'}
                     style={selectedElement.adornmentStyle || 'monochrome'}
-                    color={selectedElement.color || '#f349a5'}
                     onStyleChange={(adornmentStyle) => updateElement(selectedId, { adornmentStyle })}
                     onChoose={(id, adornmentStyle) => updateElement(selectedId, {
                       content: id,

@@ -1,0 +1,7 @@
+.neon
+node_modules/
+
+# Arquivos com variáveis de ambiente e credenciais
+.env
+.env.*
+!.env.example
