@@ -1382,43 +1382,16 @@
   font-size: 11px;
 }
 
-.device-switch {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid #e5d8d0;
-  border-radius: 7px;
-  background: #fffaf3;
-}
-
-.device-switch button {
-  min-height: 28px;
-  border: 0;
-  border-radius: 5px;
-  padding: 0 8px;
-  background: transparent;
-  color: #766a6e;
-  font-size: 8px;
-}
-
-.device-switch button.active {
-  background: #f9ddea;
-  color: #3a3036;
-  font-weight: 800;
-}
-
 .canvas-viewport {
   display: flex;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   justify-content: center;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
   padding: 0 4px 15px;
   transition: width 180ms ease;
-}
-
-.canvas-viewport-mobile .gift-canvas {
-  width: min(100%, 390px);
 }
 
 .canvas-size {
@@ -1426,9 +1399,23 @@
   font-size: 9px;
 }
 
+.gift-canvas-scaler {
+  display: flex;
+  width: 100%;
+  max-width: 630px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-inline: auto;
+  position: relative;
+  box-sizing: border-box;
+}
+
 .gift-canvas {
   display: flex;
-  width: min(100%, 630px);
+  width: 630px;
+  min-width: 630px;
+  max-width: 630px;
+  flex-shrink: 0;
   min-height: 610px;
   flex-direction: column;
   align-items: center;
@@ -2442,6 +2429,10 @@
 
 .recipient-view {
   display: flex;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   min-height: calc(100vh - 110px);
   flex-direction: column;
   align-items: center;
@@ -2474,7 +2465,9 @@
 }
 
 .gift-canvas-recipient {
-  width: min(100%, 630px);
+  width: 630px;
+  min-width: 630px;
+  max-width: 630px;
   margin-inline: auto;
 }
 
@@ -2519,7 +2512,9 @@
 }
 
 .publish-preview .gift-canvas {
-  width: min(100%, 630px);
+  width: 630px;
+  min-width: 630px;
+  max-width: 630px;
 }
 
 .publish-illustration {
@@ -3293,19 +3288,6 @@
     padding: 23px 15px;
   }
 
-  .canvas-element-carousel .carousel-frame,
-  .canvas-element-carousel .carousel-indicators {
-    width: calc(100% - 52px);
-  }
-
-  .carousel-previous {
-    left: -26px;
-  }
-
-  .carousel-next {
-    right: -26px;
-  }
-
   .canvas-toolbar {
     align-items: flex-start;
     flex-direction: column;
@@ -3315,10 +3297,6 @@
 
   .canvas-toolbar > div:first-child {
     display: none;
-  }
-
-  .device-switch {
-    align-self: flex-end;
   }
 
   .properties-panel {
@@ -3749,6 +3727,9 @@
 
 .gift-unwrapped-content {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   animation: gift-content-arrive 420ms ease-out both;
 }
 

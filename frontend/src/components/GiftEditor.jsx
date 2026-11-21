@@ -20,7 +20,7 @@ const openingEffects = [
 const fonts = [
   { value: 'Georgia, serif', label: 'Clássica' },
   { value: 'Arial, sans-serif', label: 'Simples' },
-  { value: 'cursive', label: 'Manuscrita' },
+  { value: "'Caveat', 'Dancing Script', cursive", label: 'Manuscrita' },
   { value: 'Outfit, sans-serif', label: 'Divertida' },
 ]
 const textTypes = [
@@ -180,7 +180,6 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
   const [panelView, setPanelView] = useState('category')
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true)
   const [uploadError, setUploadError] = useState('')
-  const [previewDevice, setPreviewDevice] = useState('desktop')
   const [isSpotifyModalOpen, setIsSpotifyModalOpen] = useState(false)
   const [spotifyInputUrl, setSpotifyInputUrl] = useState('')
   const [spotifyError, setSpotifyError] = useState('')
@@ -726,12 +725,8 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
         <section className="canvas-panel">
           <div className="canvas-toolbar">
             <div><span className="eyebrow">PRÉ-VISUALIZAÇÃO AO VIVO</span><strong>{gift.title || 'Sua página sem título'}</strong></div>
-            <div className="device-switch" role="group" aria-label="Tamanho da pré-visualização">
-              <button className={previewDevice === 'desktop' ? 'active' : ''} aria-pressed={previewDevice === 'desktop'} onClick={() => setPreviewDevice('desktop')}><span aria-hidden="true">▰</span> Computador</button>
-              <button className={previewDevice === 'mobile' ? 'active' : ''} aria-pressed={previewDevice === 'mobile'} onClick={() => setPreviewDevice('mobile')}><span aria-hidden="true">▯</span> Celular</button>
-            </div>
           </div>
-          <div className={`canvas-viewport canvas-viewport-${previewDevice}`}>
+          <div className="canvas-viewport">
             <GiftCanvas
               gift={gift}
               selectedId={selectedId}

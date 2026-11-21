@@ -3,7 +3,16 @@ import { AdornmentIcon } from './AdornmentIcons.jsx'
 import logoicon from '../assets/logoicon.png'
 import shining from '../assets/adornos/shining.png'
 
+const CANVAS_BASE_WIDTH = 630
 const BASE_CANVAS_HEIGHT = 510
+
+function normalizeFontFamily(font) {
+  if (!font) return 'Georgia, serif'
+  if (font === 'cursive' || font.includes('cursive') || font.includes('Caveat') || font.includes('Dancing Script')) {
+    return "'Caveat', 'Dancing Script', cursive"
+  }
+  return font
+}
 
 const resizeHandles = [
   ['nw', 'Canto superior esquerdo'],
@@ -45,8 +54,10 @@ function getElementGeometry(element, index) {
 
 function getVisibleElementPolygon(element) {
   const bounds = element.getBoundingClientRect()
-  const width = element.offsetWidth
-  const height = element.offsetHeight
+  const stage = element.closest('.gift-site-content')
+  const scaleFactor = stage ? (stage.getBoundingClientRect().width / (stage.offsetWidth || CANVAS_BASE_WIDTH)) : 1
+  const width = element.offsetWidth * scaleFactor
+  const height = element.offsetHeight * scaleFactor
   const transform = window.getComputedStyle(element).transform
   const matrix = transform.match(/^matrix\(([^)]+)\)$/)
   const values = matrix?.[1].split(',').map(Number)
@@ -121,7 +132,9 @@ function startGroupTextMove(event, element, selectedElements, onUpdateSelection,
 
   const startX = event.clientX
   const startY = event.clientY
-  const stageWidth = stage.getBoundingClientRect().width
+  const stageRect = stage.getBoundingClientRect()
+  const stageWidth = stageRect.width
+  const scaleFactor = (stageWidth / (stage.offsetWidth || CANVAS_BASE_WIDTH)) || 1
   let dragged = false
 
   const finish = () => {
@@ -145,7 +158,7 @@ function startGroupTextMove(event, element, selectedElements, onUpdateSelection,
     updateGroupPosition(
       selectedElements,
       distanceX / stageWidth * 100,
-      distanceY / BASE_CANVAS_HEIGHT * 100,
+      distanceY / (BASE_CANVAS_HEIGHT * scaleFactor) * 100,
       onUpdateSelection,
     )
   }
@@ -184,7 +197,7 @@ function GiftText({
       className={`canvas-text canvas-text-${element.role || 'paragraph'}`}
       style={{
         color: element.color || gift.textColor || '#3A3036',
-        fontFamily: element.font || gift.fontFamily || 'Georgia, serif',
+        fontFamily: normalizeFontFamily(element.font || gift.fontFamily),
         fontSize: `${element.size || (element.role === 'title' ? 42 : element.role === 'subtitle' ? 25 : 17)}px`,
         textAlign: align,
       }}
@@ -221,6 +234,10 @@ function startElementInteraction(event, element, mode, direction, onUpdate, sele
   const elementNode = event.currentTarget.closest('.canvas-element')
   let dragged = false
 
+  const stageRect = stage.getBoundingClientRect()
+  const stageWidth = stageRect.width
+  const scaleFactor = (stageWidth / (stage.offsetWidth || CANVAS_BASE_WIDTH)) || 1
+
   const interaction = {
     mode,
     direction,
@@ -233,7 +250,8 @@ function startElementInteraction(event, element, mode, direction, onUpdate, sele
       width: getDefaultSize(element),
       height: getDefaultHeight(element),
     },
-    stage: stage.getBoundingClientRect(),
+    stage: stageRect,
+    scaleFactor,
   }
   const elementBounds = event.currentTarget.closest('.canvas-element')?.getBoundingClientRect()
   if (mode === 'rotate' && elementBounds) {
@@ -262,7 +280,7 @@ function startElementInteraction(event, element, mode, direction, onUpdate, sele
     }
 
     const deltaX = (moveEvent.clientX - current.startX) / current.stage.width * 100
-    const deltaY = (moveEvent.clientY - current.startY) / BASE_CANVAS_HEIGHT * 100
+    const deltaY = (moveEvent.clientY - current.startY) / (BASE_CANVAS_HEIGHT * current.scaleFactor) * 100
     if (current.mode === 'move' && selectedElements?.length > 1 && onUpdateSelection) {
       updateGroupPosition(selectedElements, deltaX, deltaY, onUpdateSelection)
       return
@@ -481,6 +499,43 @@ function GiftCanvas({
   onDeleteElement,
   recipientView = false,
 }) {
+  const scalerRef = useRef(null)
+  const canvasRef = useRef(null)
+  const [scale, setScale] = useState(1)
+  const [canvasHeight, setCanvasHeight] = useState(0)
+
+  useLayoutEffect(() => {
+    const scaler = scalerRef.current
+    const canvas = canvasRef.current
+    if (!scaler || !canvas) return
+
+    const updateDimensions = () => {
+      const containerWidth = scaler.getBoundingClientRect().width
+      if (containerWidth > 0) {
+        const nextScale = Math.min(1, containerWidth / CANVAS_BASE_WIDTH)
+        setScale(nextScale)
+      }
+      if (canvas) {
+        setCanvasHeight(canvas.offsetHeight)
+      }
+    }
+
+    updateDimensions()
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions()
+    })
+
+    resizeObserver.observe(scaler)
+    resizeObserver.observe(canvas)
+
+    window.addEventListener('resize', updateDimensions)
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', updateDimensions)
+    }
+  }, [gift])
+
   const [selectionBox, setSelectionBox] = useState(null)
   const selectionGesture = useRef(null)
   const draggedElement = useRef(null)
@@ -490,7 +545,7 @@ function GiftCanvas({
     backgroundImage: gift.backgroundImage ? `url("${gift.backgroundImage}")` : undefined,
     backgroundSize: gift.backgroundImage ? 'cover' : undefined,
     backgroundPosition: gift.backgroundImage ? 'center' : undefined,
-    fontFamily: gift.fontFamily || 'Georgia, serif',
+    fontFamily: normalizeFontFamily(gift.fontFamily),
     color: gift.textColor || '#3A3036',
   }
 
@@ -521,11 +576,13 @@ function GiftCanvas({
     if (!stage) return
 
     const stageBounds = stage.getBoundingClientRect()
-    const startX = event.clientX - stageBounds.left
-    const startY = event.clientY - stageBounds.top
+    const scaleFactor = (stageBounds.width / (stage.offsetWidth || CANVAS_BASE_WIDTH)) || 1
+    const startX = (event.clientX - stageBounds.left) / scaleFactor
+    const startY = (event.clientY - stageBounds.top) / scaleFactor
     selectionGesture.current = {
       pointerId: event.pointerId,
       stageBounds,
+      scaleFactor,
       startX,
       startY,
       currentX: startX,
@@ -544,11 +601,11 @@ function GiftCanvas({
     const gesture = selectionGesture.current
     if (!gesture || gesture.pointerId !== event.pointerId || !gesture.canSelectArea) return
 
-    gesture.currentX = event.clientX - gesture.stageBounds.left
-    gesture.currentY = event.clientY - gesture.stageBounds.top
+    gesture.currentX = (event.clientX - gesture.stageBounds.left) / gesture.scaleFactor
+    gesture.currentY = (event.clientY - gesture.stageBounds.top) / gesture.scaleFactor
     if (!gesture.moved && Math.hypot(
-      gesture.currentX - gesture.startX,
-      gesture.currentY - gesture.startY,
+      (gesture.currentX - gesture.startX) * gesture.scaleFactor,
+      (gesture.currentY - gesture.startY) * gesture.scaleFactor,
     ) >= 4) {
       gesture.moved = true
     }
@@ -568,18 +625,18 @@ function GiftCanvas({
 
     selectionGesture.current = null
     setSelectionBox(null)
-    gesture.currentX = event.clientX - gesture.stageBounds.left
-    gesture.currentY = event.clientY - gesture.stageBounds.top
+    gesture.currentX = (event.clientX - gesture.stageBounds.left) / gesture.scaleFactor
+    gesture.currentY = (event.clientY - gesture.stageBounds.top) / gesture.scaleFactor
     if (!gesture.moved) {
       onSelect(null)
       return
     }
 
     const selection = {
-      left: Math.min(gesture.startX, gesture.currentX) + gesture.stageBounds.left,
-      right: Math.max(gesture.startX, gesture.currentX) + gesture.stageBounds.left,
-      top: Math.min(gesture.startY, gesture.currentY) + gesture.stageBounds.top,
-      bottom: Math.max(gesture.startY, gesture.currentY) + gesture.stageBounds.top,
+      left: Math.min(gesture.startX, gesture.currentX) * gesture.scaleFactor + gesture.stageBounds.left,
+      right: Math.max(gesture.startX, gesture.currentX) * gesture.scaleFactor + gesture.stageBounds.left,
+      top: Math.min(gesture.startY, gesture.currentY) * gesture.scaleFactor + gesture.stageBounds.top,
+      bottom: Math.max(gesture.startY, gesture.currentY) * gesture.scaleFactor + gesture.stageBounds.top,
     }
     const selectionPolygon = [
       [selection.left, selection.top],
@@ -613,196 +670,223 @@ function GiftCanvas({
       : null)
     .filter(Boolean)
 
-  return (
-    <article
-      className={`gift-canvas${recipientView ? ' gift-canvas-recipient' : ' gift-canvas-editor'}`}
-      style={backgroundStyle}
-      aria-label="Pré-visualização do presente"
-      onPointerDown={startSelection}
-      onPointerMove={updateSelection}
-      onPointerUp={finishSelection}
-      onPointerCancel={cancelSelection}
-    >
-      <div className={`gift-site gift-site-${gift.appearance || 'paper'}`}>
-        <header className="gift-site-nav">
-          <span className="gift-site-mark" aria-hidden="true"><img src={logoicon} alt="" draggable="false" /></span>
-          <span className="gift-site-title">{gift.title || 'Seu presente'}</span>
-          {gift.recipient && <span className="gift-site-recipient">feito para {gift.recipient}</span>}
-        </header>
-        <div className="gift-site-content" style={{ minHeight: `${contentHeight}px` }}>
-          {gift.elements.length === 0 && !recipientView ? (
-            <div className="canvas-empty">
-              <span className="empty-sparkle"><img src={shining} alt="" draggable="false" /></span>
-              <strong>Sua página começa aqui</strong>
-              <span>Adicione textos, fotos e detalhes do seu jeito.</span>
-            </div>
-          ) : (
-            <div className="canvas-elements">
-              {gift.elements.map((element, index) => {
-                const selected = selectedIds.includes(element.id) && !recipientView
-                const active = selectedId === element.id && !recipientView
-                const align = element.alignment || 'center'
-                const elementGeometry = getElementGeometry(element, index)
-                const geometry = {
-                  left: `${elementGeometry.x}%`,
-                  top: `${elementGeometry.y * BASE_CANVAS_HEIGHT / 100}px`,
-                  width: `${elementGeometry.width}%`,
-                  height: `${elementGeometry.height * BASE_CANVAS_HEIGHT / 100}px`,
-                  '--element-rotation': `${element.rotation || 0}deg`,
-                }
-                if (element.type === 'carousel') {
-                  return (
-                    <PhotoCarousel
-                      element={{ ...element, ...elementGeometry }}
-                      key={element.id}
-                      selected={active}
-                      isSelected={selected}
-                      multiSelected={selectedIds.length > 1 && selected}
-                      selectedElements={selectedElements}
-                      onSelect={onSelect}
-                      onUpdate={onUpdateElement}
-                      onUpdateSelection={onUpdateMultipleElements}
-                      onConsumeDraggedClick={consumeDraggedClick}
-                      onMarkDragged={markElementDragged}
-                      onDelete={onDeleteElement}
-                      recipientView={recipientView}
-                    />
-                  )
-                }
+  const isScaled = scale < 0.999
+  const scaledHeight = isScaled && canvasHeight > 0 ? Math.ceil(canvasHeight * scale) : undefined
 
-                return (
-                  <div
-                    className={`canvas-element canvas-element-${element.type}${element.type === 'image' ? ` align-${align}` : ''}${selected ? ' is-selected' : ''}${selectedIds.length > 1 && selected ? ' is-multi-selected' : ''}`}
-                    data-element-id={element.id}
-                    key={element.id}
-                    style={geometry}
-                    onClick={(event) => {
-                      if (recipientView || consumeDraggedClick(event)) return
-                      if (!selected) onSelect?.(element.id)
-                    }}
-                    onPointerDown={(event) => {
-                      if (recipientView || event.target.closest('button, [contenteditable="true"]')) return
-                      if (!selected) {
-                        onSelect?.(element.id)
-                        return
-                      }
-                      startElementInteraction(
-                        event,
-                        { ...element, ...elementGeometry },
-                        'move',
-                        '',
-                        onUpdateElement,
-                        selectedElements,
-                        onUpdateMultipleElements,
-                        markElementDragged,
-                      )
-                    }}
-                    onKeyDown={(event) => {
-                      if (!recipientView && (event.key === 'Enter' || event.key === ' ')) {
-                        event.preventDefault()
-                        onSelect?.(element.id)
-                      }
-                    }}
-                    role={recipientView ? undefined : 'group'}
-                    tabIndex={recipientView ? undefined : 0}
-                    aria-label={recipientView ? undefined : 'Selecionar elemento'}
-                  >
-                    {active && (
-                      <ElementControls
+  return (
+    <div
+      className="gift-canvas-scaler"
+      ref={scalerRef}
+      style={{
+        width: '100%',
+        maxWidth: `${CANVAS_BASE_WIDTH}px`,
+        height: scaledHeight ? `${scaledHeight}px` : undefined,
+        position: 'relative',
+        marginInline: 'auto',
+      }}
+    >
+      <article
+        ref={canvasRef}
+        className={`gift-canvas${recipientView ? ' gift-canvas-recipient' : ' gift-canvas-editor'}`}
+        style={{
+          ...backgroundStyle,
+          width: `${CANVAS_BASE_WIDTH}px`,
+          minWidth: `${CANVAS_BASE_WIDTH}px`,
+          maxWidth: `${CANVAS_BASE_WIDTH}px`,
+          transform: isScaled ? `scale(${scale})` : undefined,
+          transformOrigin: 'top left',
+          position: isScaled ? 'absolute' : 'relative',
+          left: 0,
+          top: 0,
+          flexShrink: 0,
+        }}
+        aria-label="Pré-visualização do presente"
+        onPointerDown={startSelection}
+        onPointerMove={updateSelection}
+        onPointerUp={finishSelection}
+        onPointerCancel={cancelSelection}
+      >
+        <div className={`gift-site gift-site-${gift.appearance || 'paper'}`}>
+          <header className="gift-site-nav">
+            <span className="gift-site-mark" aria-hidden="true"><img src={logoicon} alt="" draggable="false" /></span>
+            <span className="gift-site-title">{gift.title || 'Seu presente'}</span>
+            {gift.recipient && <span className="gift-site-recipient">feito para {gift.recipient}</span>}
+          </header>
+          <div className="gift-site-content" style={{ minHeight: `${contentHeight}px` }}>
+            {gift.elements.length === 0 && !recipientView ? (
+              <div className="canvas-empty">
+                <span className="empty-sparkle"><img src={shining} alt="" draggable="false" /></span>
+                <strong>Sua página começa aqui</strong>
+                <span>Adicione textos, fotos e detalhes do seu jeito.</span>
+              </div>
+            ) : (
+              <div className="canvas-elements">
+                {gift.elements.map((element, index) => {
+                  const selected = selectedIds.includes(element.id) && !recipientView
+                  const active = selectedId === element.id && !recipientView
+                  const align = element.alignment || 'center'
+                  const elementGeometry = getElementGeometry(element, index)
+                  const geometry = {
+                    left: `${elementGeometry.x}%`,
+                    top: `${elementGeometry.y * BASE_CANVAS_HEIGHT / 100}px`,
+                    width: `${elementGeometry.width}%`,
+                    height: `${elementGeometry.height * BASE_CANVAS_HEIGHT / 100}px`,
+                    '--element-rotation': `${element.rotation || 0}deg`,
+                  }
+                  if (element.type === 'carousel') {
+                    return (
+                      <PhotoCarousel
                         element={{ ...element, ...elementGeometry }}
-                        onUpdate={onUpdateElement}
-                        onDelete={onDeleteElement}
-                      />
-                    )}
-                    {element.type === 'text' && (
-                      <GiftText
-                        element={element}
-                        gift={gift}
-                        align={align}
-                        recipientView={recipientView}
-                        selected={selected}
+                        key={element.id}
+                        selected={active}
+                        isSelected={selected}
+                        multiSelected={selectedIds.length > 1 && selected}
                         selectedElements={selectedElements}
                         onSelect={onSelect}
                         onUpdate={onUpdateElement}
                         onUpdateSelection={onUpdateMultipleElements}
-                        onMarkDragged={markElementDragged}
                         onConsumeDraggedClick={consumeDraggedClick}
+                        onMarkDragged={markElementDragged}
+                        onDelete={onDeleteElement}
+                        recipientView={recipientView}
                       />
-                    )}
-                    {element.type === 'image' && (
-                      <img
-                        src={element.content}
-                        alt={element.name || 'Foto do presente'}
-                        style={getPhotoBorderStyle(element)}
-                        draggable="false"
-                      />
-                    )}
-                    {element.type === 'sticker' && (
-                      <span className="canvas-sticker" role="img" aria-label="Adorno">
-                        <AdornmentIcon
-                          id={element.content}
-                          styleType={element.adornmentStyle || 'monochrome'}
+                    )
+                  }
+
+                  return (
+                    <div
+                      className={`canvas-element canvas-element-${element.type}${element.type === 'image' ? ` align-${align}` : ''}${selected ? ' is-selected' : ''}${selectedIds.length > 1 && selected ? ' is-multi-selected' : ''}`}
+                      data-element-id={element.id}
+                      key={element.id}
+                      style={geometry}
+                      onClick={(event) => {
+                        if (recipientView || consumeDraggedClick(event)) return
+                        if (!selected) onSelect?.(element.id)
+                      }}
+                      onPointerDown={(event) => {
+                        if (recipientView || event.target.closest('button, [contenteditable="true"]')) return
+                        if (!selected) {
+                          onSelect?.(element.id)
+                          return
+                        }
+                        startElementInteraction(
+                          event,
+                          { ...element, ...elementGeometry },
+                          'move',
+                          '',
+                          onUpdateElement,
+                          selectedElements,
+                          onUpdateMultipleElements,
+                          markElementDragged,
+                        )
+                      }}
+                      onKeyDown={(event) => {
+                        if (!recipientView && (event.key === 'Enter' || event.key === ' ')) {
+                          event.preventDefault()
+                          onSelect?.(element.id)
+                        }
+                      }}
+                      role={recipientView ? undefined : 'group'}
+                      tabIndex={recipientView ? undefined : 0}
+                      aria-label={recipientView ? undefined : 'Selecionar elemento'}
+                    >
+                      {active && (
+                        <ElementControls
+                          element={{ ...element, ...elementGeometry }}
+                          onUpdate={onUpdateElement}
+                          onDelete={onDeleteElement}
                         />
-                      </span>
-                    )}
-                    {element.type === 'music' && (
-                      <div className="canvas-spotify-frame">
-                        <iframe
-                          title="Player oficial do Spotify"
-                          src={element.url}
-                          width="100%"
-                          height="100%"
-                          frameBorder="0"
-                          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                          loading="lazy"
-                          style={{ borderRadius: '12px', border: 0, width: '100%', height: '100%', display: 'block' }}
+                      )}
+                      {element.type === 'text' && (
+                        <GiftText
+                          element={element}
+                          gift={gift}
+                          align={align}
+                          recipientView={recipientView}
+                          selected={selected}
+                          selectedElements={selectedElements}
+                          onSelect={onSelect}
+                          onUpdate={onUpdateElement}
+                          onUpdateSelection={onUpdateMultipleElements}
+                          onMarkDragged={markElementDragged}
+                          onConsumeDraggedClick={consumeDraggedClick}
                         />
-                        {!recipientView && (!selected || selectedIds.length > 1) && (
-                          <div
-                            className="canvas-spotify-overlay"
-                            title="Clique para selecionar e mover o Spotify"
+                      )}
+                      {element.type === 'image' && (
+                        <img
+                          src={element.content}
+                          alt={element.name || 'Foto do presente'}
+                          style={getPhotoBorderStyle(element)}
+                          draggable="false"
+                        />
+                      )}
+                      {element.type === 'sticker' && (
+                        <span className="canvas-sticker" role="img" aria-label="Adorno">
+                          <AdornmentIcon
+                            id={element.content}
+                            styleType={element.adornmentStyle || 'monochrome'}
                           />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          {selectionBox && (
-            <div
-              className="canvas-selection-marquee"
-              style={{
-                left: `${selectionBox.left}px`,
-                top: `${selectionBox.top}px`,
-                width: `${selectionBox.width}px`,
-                height: `${selectionBox.height}px`,
-              }}
-              aria-hidden="true"
-            />
-          )}
-          {!gift.elements.some((el) => el.type === 'music') && gift.music?.url ? (
-            <div className="gift-spotify-container">
-              <iframe
-                title="Player oficial do Spotify"
-                src={gift.music.url}
-                width="100%"
-                height="152"
-                frameBorder="0"
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
+                        </span>
+                      )}
+                      {element.type === 'music' && (
+                        <div className="canvas-spotify-frame">
+                          <iframe
+                            title="Player oficial do Spotify"
+                            src={element.url}
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                            style={{ borderRadius: '12px', border: 0, width: '100%', height: '100%', display: 'block' }}
+                          />
+                          {!recipientView && (!selected || selectedIds.length > 1) && (
+                            <div
+                              className="canvas-spotify-overlay"
+                              title="Clique para selecionar e mover o Spotify"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {selectionBox && (
+              <div
+                className="canvas-selection-marquee"
+                style={{
+                  left: `${selectionBox.left}px`,
+                  top: `${selectionBox.top}px`,
+                  width: `${selectionBox.width}px`,
+                  height: `${selectionBox.height}px`,
+                }}
+                aria-hidden="true"
               />
-            </div>
-          ) : gift.music?.src ? (
-            <audio className="gift-audio" controls src={gift.music.src}>
-              Seu navegador não oferece suporte para áudio.
-            </audio>
-          ) : null}
+            )}
+            {!gift.elements.some((el) => el.type === 'music') && gift.music?.url ? (
+              <div className="gift-spotify-container">
+                <iframe
+                  title="Player oficial do Spotify"
+                  src={gift.music.url}
+                  width="100%"
+                  height="152"
+                  frameBorder="0"
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                  loading="lazy"
+                />
+              </div>
+            ) : gift.music?.src ? (
+              <audio className="gift-audio" controls src={gift.music.src}>
+                Seu navegador não oferece suporte para áudio.
+              </audio>
+            ) : null}
+          </div>
+          <footer className="gift-site-footer"><span>feito com carinho</span><span aria-hidden="true">♡</span></footer>
         </div>
-        <footer className="gift-site-footer"><span>feito com carinho</span><span aria-hidden="true">♡</span></footer>
-      </div>
-    </article>
+      </article>
+    </div>
   )
 }
 

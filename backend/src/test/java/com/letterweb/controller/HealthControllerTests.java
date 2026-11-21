@@ -12,10 +12,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Testes do endpoint de saúde. Não acessa o PostgreSQL:
- * o HealthController não possui dependências de banco de dados.
- */
 @WebMvcTest(HealthController.class)
 class HealthControllerTests {
 
