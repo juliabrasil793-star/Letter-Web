@@ -184,15 +184,27 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
   const [spotifyInputUrl, setSpotifyInputUrl] = useState('')
   const [spotifyError, setSpotifyError] = useState('')
 
-  const selectElement = (id, selectedElement = gift.elements.find((item) => item.id === id)) => {
+  // Categoria padrão de cada tipo de elemento (usada ao abrir a edição).
+  const categoryForElement = (element) => element?.type === 'text' ? 'text' : element?.type === 'image' || element?.type === 'carousel' ? 'uploads' : element?.type === 'music' ? 'music' : 'elements'
+
+  // Seleção simples: marca o elemento e mostra a toolbar flutuante,
+  // mas NÃO abre o painel de edição — isso fica para uma ação intencional
+  // (duplo clique, Enter ou clique na camada).
+  const selectElement = (id) => {
     setSelectedId(id)
     setSelectedIds(id ? [id] : [])
+    if (!id) {
+      setPanelView('category')
+    }
+  }
+
+  // Edição intencional: abre o painel de propriedades do elemento.
+  const editElement = (id, selectedElement = gift.elements.find((item) => item.id === id)) => {
+    selectElement(id, selectedElement)
     if (id) {
-      setActiveCategory(selectedElement?.type === 'text' ? 'text' : selectedElement?.type === 'image' || selectedElement?.type === 'carousel' ? 'uploads' : selectedElement?.type === 'music' ? 'music' : 'elements')
+      setActiveCategory(categoryForElement(selectedElement))
       setPanelView('properties')
       setIsSidePanelOpen(true)
-    } else {
-      setPanelView('category')
     }
   }
 
@@ -202,7 +214,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
     setSelectedId(uniqueIds[0] ?? null)
     if (uniqueIds.length > 0) {
       const element = gift.elements.find((item) => item.id === uniqueIds[0])
-      setActiveCategory(element?.type === 'text' ? 'text' : element?.type === 'image' || element?.type === 'carousel' ? 'uploads' : element?.type === 'music' ? 'music' : 'elements')
+      setActiveCategory(categoryForElement(element))
       setPanelView('properties')
       setIsSidePanelOpen(true)
     } else {
@@ -705,7 +717,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
                 <div className="category-layer-list">
                   <span className="field-label">Elementos na página</span>
                   {gift.elements.map((element, index) => (
-                    <button className={`layer-item${selectedIds.includes(element.id) ? ' active' : ''}`} key={element.id} onClick={() => selectElement(element.id)}>
+                    <button className={`layer-item${selectedIds.includes(element.id) ? ' active' : ''}`} key={element.id} onClick={() => editElement(element.id)}>
                       <span>{element.type === 'text' ? element.role === 'title' ? 'H1' : element.role === 'subtitle' ? 'H2' : '¶' : element.type === 'image' ? '▧' : element.type === 'carousel' ? '▤' : element.type === 'music' ? '♫' : <AdornmentIcon id={element.content} />}</span>
                       <span>{element.type === 'text' ? (element.content.slice(0, 20) || 'Texto vazio') : element.type === 'image' ? 'Imagem' : element.type === 'carousel' ? `Carrossel · ${element.images.length} fotos` : element.type === 'music' ? 'Música (Spotify)' : 'Adorno'}</span>
                       <small>{String(index + 1).padStart(2, '0')}</small>
@@ -732,6 +744,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
               selectedId={selectedId}
               selectedIds={selectedIds}
               onSelect={selectElement}
+              onEdit={editElement}
               onSelectMany={selectElements}
               onUpdateElement={updateElement}
               onUpdateMultipleElements={updateMultipleElements}

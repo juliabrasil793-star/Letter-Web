@@ -326,7 +326,7 @@ function startElementInteraction(event, element, mode, direction, onUpdate, sele
   document.addEventListener('pointercancel', stopInteraction, { once: true })
 }
 
-function PhotoCarousel({ element, selected, isSelected, multiSelected, selectedElements, onSelect, onUpdate, onUpdateSelection, onConsumeDraggedClick, onMarkDragged, onDelete, recipientView }) {
+function PhotoCarousel({ element, selected, isSelected, multiSelected, selectedElements, onSelect, onEdit, onUpdate, onUpdateSelection, onConsumeDraggedClick, onMarkDragged, onDelete, recipientView }) {
   const photos = element.images || []
   const [recipientIndex, setRecipientIndex] = useState(() => Math.max(0, Math.min(element.currentIndex || 0, Math.max(0, photos.length - 1))))
 
@@ -359,6 +359,10 @@ function PhotoCarousel({ element, selected, isSelected, multiSelected, selectedE
       onClick={(event) => {
         if (recipientView || onConsumeDraggedClick?.(event)) return
         if (!isSelected) onSelect?.(element.id)
+      }}
+      onDoubleClick={(event) => {
+        if (recipientView || onConsumeDraggedClick?.(event)) return
+        onEdit?.(element.id, element)
       }}
       onPointerDown={(event) => {
         if (recipientView || event.target.closest('button')) return
@@ -493,6 +497,7 @@ function GiftCanvas({
   selectedId,
   selectedIds = [],
   onSelect,
+  onEdit,
   onSelectMany,
   onUpdateElement,
   onUpdateMultipleElements,
@@ -743,6 +748,7 @@ function GiftCanvas({
                         multiSelected={selectedIds.length > 1 && selected}
                         selectedElements={selectedElements}
                         onSelect={onSelect}
+                        onEdit={onEdit}
                         onUpdate={onUpdateElement}
                         onUpdateSelection={onUpdateMultipleElements}
                         onConsumeDraggedClick={consumeDraggedClick}
@@ -763,6 +769,10 @@ function GiftCanvas({
                         if (recipientView || consumeDraggedClick(event)) return
                         if (!selected) onSelect?.(element.id)
                       }}
+                      onDoubleClick={(event) => {
+                        if (recipientView || consumeDraggedClick(event)) return
+                        onEdit?.(element.id, element)
+                      }}
                       onPointerDown={(event) => {
                         if (recipientView || event.target.closest('button, [contenteditable="true"]')) return
                         if (!selected) {
@@ -781,9 +791,13 @@ function GiftCanvas({
                         )
                       }}
                       onKeyDown={(event) => {
-                        if (!recipientView && (event.key === 'Enter' || event.key === ' ')) {
+                        if (recipientView) return
+                        if (event.key === ' ' || (event.key === 'Enter' && !selected)) {
                           event.preventDefault()
                           onSelect?.(element.id)
+                        } else if (event.key === 'Enter' && selected) {
+                          event.preventDefault()
+                          onEdit?.(element.id, element)
                         }
                       }}
                       role={recipientView ? undefined : 'group'}
