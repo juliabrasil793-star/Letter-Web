@@ -7,10 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.letterweb.dto.ApiError;
-import com.letterweb.dto.RateLimitError;
 import com.letterweb.service.GiftNotFoundException;
 import com.letterweb.service.InvalidGiftException;
-import com.letterweb.service.PublicationLimitException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -29,14 +27,5 @@ public class ApiExceptionHandler {
 	public ResponseEntity<ApiError> handleGiftNotFound(GiftNotFoundException exception) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(new ApiError("Presente não encontrado ou expirado."));
-	}
-
-	@ExceptionHandler(PublicationLimitException.class)
-	public ResponseEntity<RateLimitError> handlePublicationLimit(PublicationLimitException exception) {
-		return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-				.body(new RateLimitError(
-						"O limite de 5 publicações por IP em 24 horas foi atingido. "
-								+ "Você poderá publicar novamente em " + exception.getRetryAt() + ".",
-						exception.getRetryAt()));
 	}
 }

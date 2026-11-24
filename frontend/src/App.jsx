@@ -17,7 +17,7 @@ const emptyGift = {
   backgroundImage: '',
   fontFamily: 'Georgia, serif',
   textColor: '#3A3036',
-  appearance: 'paper',
+  appearance: 'soft',
   unwrapping: {
     model: 'classic',
     boxColor: '#F349A5',

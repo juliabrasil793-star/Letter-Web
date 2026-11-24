@@ -1,7 +1,6 @@
 package com.letterweb;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,7 +22,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.letterweb.config.ClientIpResolver;
 import com.letterweb.config.CorsConfiguration;
 import com.letterweb.controller.ApiExceptionHandler;
 import com.letterweb.controller.GiftController;
@@ -31,7 +29,6 @@ import com.letterweb.dto.GiftResponse;
 import com.letterweb.service.GiftNotFoundException;
 import com.letterweb.service.InvalidGiftException;
 import com.letterweb.service.GiftService;
-import com.letterweb.service.PublicationLimitException;
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(GiftController.class)
@@ -67,15 +64,11 @@ class LetterwebBackendApplicationTests {
 	@MockitoBean
 	private GiftService giftService;
 
-	@MockitoBean
-	private ClientIpResolver clientIpResolver;
-
 	@Test
 	void publishesGiftWithoutChangingItsContent() throws Exception {
 		Instant createdAt = Instant.parse("2026-11-10T12:00:00Z");
 		Instant expiresAt = createdAt.plusSeconds(48 * 60 * 60);
-		when(clientIpResolver.resolve(any())).thenReturn("192.0.2.10");
-		when(giftService.publish(any(), eq("192.0.2.10"))).thenAnswer(invocation -> new GiftResponse(
+		when(giftService.publish(any())).thenAnswer(invocation -> new GiftResponse(
 				"abc123",
 				createdAt,
 				expiresAt,
@@ -97,8 +90,7 @@ class LetterwebBackendApplicationTests {
 
 	@Test
 	void rejectsGiftWithoutElementsArray() throws Exception {
-		when(clientIpResolver.resolve(any())).thenReturn("192.0.2.10");
-		when(giftService.publish(any(), eq("192.0.2.10"))).thenThrow(
+		when(giftService.publish(any())).thenThrow(
 				new InvalidGiftException("O presente deve ser um objeto com elements como uma lista."));
 
 		mockMvc.perform(post("/api/presentes")
@@ -120,31 +112,13 @@ class LetterwebBackendApplicationTests {
 	}
 
 	@Test
-	void returnsTooManyRequestsWithNextPublicationTime() throws Exception {
-		Instant retryAt = Instant.parse("2026-11-11T12:00:00Z");
-		when(clientIpResolver.resolve(any())).thenReturn("192.0.2.10");
-		when(giftService.publish(any(), eq("192.0.2.10")))
-				.thenThrow(new PublicationLimitException(retryAt));
-
-		mockMvc.perform(post("/api/presentes")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(GIFT_JSON))
-				.andExpect(status().isTooManyRequests())
-				.andExpect(jsonPath("$.error").value(
-						"O limite de 5 publicações por IP em 24 horas foi atingido. "
-								+ "Você poderá publicar novamente em 2026-11-11T12:00:00Z."))
-				.andExpect(jsonPath("$.retryAt").value("2026-11-11T12:00:00Z"));
-	}
-
-	@Test
-	void getDoesNotResolveOrRegisterPublicationIp() throws Exception {
+	void getDoesNotPublishGift() throws Exception {
 		when(giftService.findPublished("missing")).thenThrow(new GiftNotFoundException());
 
 		mockMvc.perform(get("/api/presentes/missing"))
 				.andExpect(status().isNotFound());
 
-		verify(clientIpResolver, never()).resolve(any());
-		verify(giftService, never()).publish(any(), any());
+		verify(giftService, never()).publish(any());
 	}
 
 	@Test

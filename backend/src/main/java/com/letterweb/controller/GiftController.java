@@ -11,10 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.letterweb.config.ClientIpResolver;
 import com.letterweb.dto.GiftResponse;
 import com.letterweb.service.GiftService;
-import jakarta.servlet.http.HttpServletRequest;
 import tools.jackson.databind.JsonNode;
 
 @RestController
@@ -22,18 +20,14 @@ import tools.jackson.databind.JsonNode;
 public class GiftController {
 
 	private final GiftService giftService;
-	private final ClientIpResolver clientIpResolver;
 
-	public GiftController(GiftService giftService, ClientIpResolver clientIpResolver) {
+	public GiftController(GiftService giftService) {
 		this.giftService = giftService;
-		this.clientIpResolver = clientIpResolver;
 	}
 
 	@PostMapping
-	public ResponseEntity<GiftResponse> publish(
-			@RequestBody JsonNode content,
-			HttpServletRequest request) {
-		GiftResponse response = giftService.publish(content, clientIpResolver.resolve(request));
+	public ResponseEntity<GiftResponse> publish(@RequestBody JsonNode content) {
+		GiftResponse response = giftService.publish(content);
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest()
 				.path("/{slug}")
 				.buildAndExpand(response.slug())

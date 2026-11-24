@@ -4603,3 +4603,317 @@
   }
 }
 
+/* ==========================================================================
+   COMPARTILHAMENTO DE PRESENTES (PublishPage)
+   ========================================================================== */
+.publish-share-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.share-message-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #eadfd7;
+  border-radius: 10px;
+  background: #fffaf5;
+}
+
+.share-message-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.share-message-tip {
+  color: #87777e;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.share-message-textarea {
+  min-height: 105px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  background: #ffffff;
+  border: 1.5px solid #e0d0c8;
+  border-radius: 8px;
+  color: #3a3036;
+}
+
+.share-message-textarea:focus {
+  border-color: #f349a5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(243, 73, 165, 0.15);
+}
+
+.share-buttons-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.share-main-button {
+  flex: 1 1 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(243, 73, 165, 0.28);
+}
+
+.share-main-button span {
+  font-size: 14px;
+}
+
+.share-copy-button {
+  flex: 1 1 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-direct-link-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+/* ==========================================================================
+   TUTORIAL INTERATIVO NO ESTILO IBISPAINT (InteractiveTutorial)
+   ========================================================================== */
+.tutorial-header-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-weight: 700;
+  color: #a33872;
+  border-color: #f3bad5;
+  background: #fff5fa;
+  transition: all 160ms ease;
+}
+
+.tutorial-header-button:hover {
+  background: #fce2ef;
+  border-color: #f349a5;
+  color: #8c205b;
+}
+
+.tutorial-header-button span:first-child {
+  color: #f349a5;
+  font-size: 13px;
+}
+
+.interactive-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.tutorial-svg-mask {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tutorial-spotlight-ring {
+  position: fixed;
+  border-radius: 12px;
+  border: 2.5px solid #f349a5;
+  box-shadow: 0 0 0 3px rgba(255, 206, 18, 0.45), 0 0 20px rgba(243, 73, 165, 0.55);
+  pointer-events: none;
+  transition: all 260ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation: tutorial-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 206, 18, 0.45), 0 0 16px rgba(243, 73, 165, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 206, 18, 0.7), 0 0 28px rgba(243, 73, 165, 0.8);
+  }
+}
+
+.tutorial-card {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  background: #fffcf8;
+  border: 1.5px solid #f3d4c0;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(35, 24, 30, 0.32), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 100000;
+  color: #3a3036;
+  box-sizing: border-box;
+  transition: top 240ms cubic-bezier(0.2, 0.8, 0.3, 1), left 240ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation: tutorial-card-fade-in 240ms ease-out;
+}
+
+@keyframes tutorial-card-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tutorial-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tutorial-step-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #fde8f2;
+  color: #a82e6a;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.tutorial-close-btn {
+  border: 0;
+  background: transparent;
+  color: #8c7d84;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.tutorial-close-btn:hover {
+  background: #f2ece6;
+  color: #3a3036;
+}
+
+.tutorial-card-body h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #2b2227;
+  letter-spacing: -0.3px;
+}
+
+.tutorial-card-body p {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5c4f55;
+}
+
+.tutorial-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.tutorial-link-btn {
+  border: 0;
+  background: transparent;
+  color: #8c7d84;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.tutorial-link-btn:hover {
+  color: #3a3036;
+}
+
+.tutorial-nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-btn-prev {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.tutorial-btn-next {
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tutorial-finished-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, calc(100vw - 32px));
+  padding: 28px 24px;
+  background: #fffcf8;
+  border: 2px solid #ffd460;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(35, 24, 30, 0.4);
+  text-align: center;
+  z-index: 100000;
+  box-sizing: border-box;
+  animation: tutorial-card-fade-in 260ms ease-out;
+}
+
+.tutorial-celebrate-sparkle {
+  display: block;
+  font-size: 38px;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.tutorial-finished-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #2b2227;
+  letter-spacing: -0.5px;
+}
+
+.tutorial-finished-card p {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5c4f55;
+}
+
+.tutorial-finish-button {
+  width: 100%;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 800;
+}
+

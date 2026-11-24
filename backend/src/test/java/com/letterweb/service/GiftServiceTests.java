@@ -1,9 +1,11 @@
 package com.letterweb.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,9 +33,6 @@ class GiftServiceTests {
 	@Mock
 	private GiftRepository giftRepository;
 
-	@Mock
-	private PublicationLimitService publicationLimitService;
-
 	private GiftService giftService;
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -41,7 +40,6 @@ class GiftServiceTests {
 	void setUp() {
 		giftService = new GiftService(
 				giftRepository,
-				publicationLimitService,
 				Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
@@ -52,14 +50,28 @@ class GiftServiceTests {
 				{"title":"Presente","elements":[],"backgroundImage":"data:image/png;base64,AA=="}
 				""");
 
-		GiftResponse response = giftService.publish(content, "192.0.2.1");
+		GiftResponse response = giftService.publish(content);
 
 		assertEquals(32, response.slug().length());
 		assertEquals(NOW, response.createdAt());
 		assertEquals(NOW.plusSeconds(48 * 60 * 60), response.expiresAt());
 		assertEquals(content, response.gift());
 		verify(giftRepository).save(any(Gift.class));
-		verify(publicationLimitService).registerPublication("192.0.2.1");
+	}
+
+	@Test
+	void allowsPublishingMultipleGiftsWithoutLimit() throws Exception {
+		when(giftRepository.save(any(Gift.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		var content = objectMapper.readTree("""
+				{"title":"Presente","elements":[]}
+				""");
+
+		for (int i = 0; i < 10; i++) {
+			GiftResponse response = giftService.publish(content);
+			assertNotNull(response.slug());
+		}
+
+		verify(giftRepository, times(10)).save(any(Gift.class));
 	}
 
 	@Test
@@ -68,10 +80,9 @@ class GiftServiceTests {
 				{"title":"Sem elementos"}
 				""");
 
-		assertThrows(InvalidGiftException.class, () -> giftService.publish(content, "192.0.2.1"));
+		assertThrows(InvalidGiftException.class, () -> giftService.publish(content));
 
 		verify(giftRepository, never()).save(any(Gift.class));
-		verify(publicationLimitService, never()).registerPublication(any());
 	}
 
 	@Test

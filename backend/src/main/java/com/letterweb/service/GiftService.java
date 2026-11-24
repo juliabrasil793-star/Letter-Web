@@ -19,26 +19,19 @@ public class GiftService {
 	private static final Duration AVAILABILITY = Duration.ofHours(48);
 
 	private final GiftRepository giftRepository;
-	private final PublicationLimitService publicationLimitService;
 	private final Clock clock;
 
-	public GiftService(
-			GiftRepository giftRepository,
-			PublicationLimitService publicationLimitService,
-			Clock clock) {
+	public GiftService(GiftRepository giftRepository, Clock clock) {
 		this.giftRepository = giftRepository;
-		this.publicationLimitService = publicationLimitService;
 		this.clock = clock;
 	}
 
 	@Transactional
-	public GiftResponse publish(JsonNode content, String clientIp) {
+	public GiftResponse publish(JsonNode content) {
 		if (content == null || !content.isObject() || content.isEmpty()
 				|| !content.path("elements").isArray()) {
 			throw new InvalidGiftException("O presente deve ser um objeto com elements como uma lista.");
 		}
-
-		publicationLimitService.registerPublication(clientIp);
 
 		Instant createdAt = clock.instant();
 		Gift gift = new Gift(
@@ -48,6 +41,11 @@ public class GiftService {
 				createdAt.plus(AVAILABILITY));
 
 		return GiftResponse.from(giftRepository.save(gift));
+	}
+
+	@Transactional
+	public GiftResponse publish(JsonNode content, String clientIp) {
+		return publish(content);
 	}
 
 	@Transactional(readOnly = true)

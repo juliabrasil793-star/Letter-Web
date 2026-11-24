@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GiftCanvas } from './GiftCanvas.jsx'
 import logoGif from '../assets/Pink and Yellow Retro Y2K Beauty Store Animated Logo (2).gif'
 import { parseSpotifyUrl } from '../utils/spotify.js'
 import { AdornmentIcon } from './AdornmentIcons.jsx'
 import AdornmentLibrary from './AdornmentLibrary.jsx'
 import boxModels from './boxModels.js'
+import InteractiveTutorial from './InteractiveTutorial.jsx'
 
 const colors = ['#FFF4E8', '#FAD5E8', '#B9A0E8', '#A9DCCB', '#A9D9F5', '#F6A77D', '#FFCE12']
 
@@ -183,6 +184,19 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
   const [isSpotifyModalOpen, setIsSpotifyModalOpen] = useState(false)
   const [spotifyInputUrl, setSpotifyInputUrl] = useState('')
   const [spotifyError, setSpotifyError] = useState('')
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false)
+
+  useEffect(() => {
+    try {
+      const tutorialSeen = localStorage.getItem('letterweb_tutorial_seen')
+      if (!tutorialSeen) {
+        const timer = setTimeout(() => setIsTutorialOpen(true), 600)
+        return () => clearTimeout(timer)
+      }
+    } catch {
+      // Ignorar indisponibilidade de localStorage
+    }
+  }, [])
 
   // Categoria padrão de cada tipo de elemento (usada ao abrir a edição).
   const categoryForElement = (element) => element?.type === 'text' ? 'text' : element?.type === 'image' || element?.type === 'carousel' ? 'uploads' : element?.type === 'music' ? 'music' : 'elements'
@@ -398,14 +412,11 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
       if (type === 'background') {
         updateGift({ backgroundImage: images[0].src })
       } else if (type === 'carousel') {
-        // Se já houver um carrossel (seja o selecionado ou qualquer existente), adiciona ao mesmo carrossel
-        const targetCarousel = gift.elements.find((element) => element.id === selectedId && element.type === 'carousel')
-          || gift.elements.find((element) => element.type === 'carousel')
-
-        if (targetCarousel) {
-          const updatedImages = [...targetCarousel.images, ...images]
-          updateElement(targetCarousel.id, { images: updatedImages })
-          selectElement(targetCarousel.id)
+        // Se um carrossel já estiver selecionado, as novas fotos entram nele;
+        // caso contrário, cada envio cria um carrossel novo e independente
+        const selectedCarousel = gift.elements.find((element) => element.id === selectedId && element.type === 'carousel')
+        if (selectedCarousel) {
+          updateElement(selectedCarousel.id, { images: [...selectedCarousel.images, ...images] })
         } else {
           addElement({
             type: 'carousel',
@@ -492,7 +503,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
           <button className="back-link" onClick={onBack}><span aria-hidden="true">←</span> Sair do editor</button>
         </div>
         <div className="editor-header-actions">
-          <div className="history-actions" role="group" aria-label="Histórico de alterações">
+          <div className="history-actions" role="group" aria-label="Histórico de alterações" data-tour="history-actions">
             <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Desfazer" title="Desfazer">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 7 4 12l5 5v-3h5a4 4 0 0 1 4 4h2a6 6 0 0 0-6-6H9V7Z" />
@@ -510,13 +521,23 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
             </svg>
             <span>Limpar projeto</span>
           </button>
+          <button
+            type="button"
+            className="button button-outline tutorial-header-button"
+            onClick={() => setIsTutorialOpen(true)}
+            title="Abrir tutorial interativo"
+            aria-label="Abrir tutorial interativo"
+          >
+            <span aria-hidden="true">✦</span>
+            <span>Tutorial</span>
+          </button>
           {saveError ? (
             <span className="save-error" role="status">{saveError}</span>
           ) : (
             <span className="saved-status"><span aria-hidden="true">●</span> Rascunho salvo</span>
           )}
-          <button className="button button-outline" onClick={onPreview}>Pré-visualizar <span aria-hidden="true">↗</span></button>
-          <button className="button button-primary compact-button" onClick={onPublish}>Continuar <span aria-hidden="true">→</span></button>
+          <button className="button button-outline" onClick={onPreview} data-tour="preview-button">Pré-visualizar <span aria-hidden="true">↗</span></button>
+          <button className="button button-primary compact-button" onClick={onPublish} data-tour="publish-button">Continuar <span aria-hidden="true">→</span></button>
         </div>
       </header>
 
@@ -527,6 +548,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
               <button
                 type="button"
                 key={category.id}
+                data-tour={`nav-${category.id}`}
                 className={`editor-category-button${activeCategory === category.id && isSidePanelOpen ? ' active' : ''}`}
                 aria-pressed={activeCategory === category.id && isSidePanelOpen}
                 onClick={() => openCategory(category.id)}
@@ -591,8 +613,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
               </div>
               <div className="tool-divider" />
               <span className="field-label">Estilo da página</span>
-              <select id="page-appearance" className="text-input" value={gift.appearance} onChange={(event) => updateGift({ appearance: event.target.value })}>
-                <option value="paper">Papel com textura</option>
+              <select id="page-appearance" className="text-input" value={gift.appearance === 'paper' ? 'soft' : gift.appearance} onChange={(event) => updateGift({ appearance: event.target.value })}>
                 <option value="soft">Suave e arredondado</option>
                 <option value="clean">Simples e clean</option>
               </select>
@@ -738,7 +759,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
           <div className="canvas-toolbar">
             <div><span className="eyebrow">PRÉ-VISUALIZAÇÃO AO VIVO</span><strong>{gift.title || 'Sua página sem título'}</strong></div>
           </div>
-          <div className="canvas-viewport">
+          <div className="canvas-viewport" data-tour="canvas">
             <GiftCanvas
               gift={gift}
               selectedId={selectedId}
@@ -766,8 +787,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
               <label className="field-label" htmlFor="page-text-color">Cor padrão dos textos</label>
               <input id="page-text-color" className="property-color" type="color" value={gift.textColor} onChange={(event) => updateGift({ textColor: event.target.value })} />
               <label className="field-label" htmlFor="page-appearance">Estilo da página</label>
-              <select id="page-appearance" className="text-input" value={gift.appearance} onChange={(event) => updateGift({ appearance: event.target.value })}>
-                <option value="paper">Papel com textura</option>
+              <select id="page-appearance" className="text-input" value={gift.appearance === 'paper' ? 'soft' : gift.appearance} onChange={(event) => updateGift({ appearance: event.target.value })}>
                 <option value="soft">Suave e arredondado</option>
                 <option value="clean">Simples e clean</option>
               </select>
@@ -857,12 +877,6 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
                   <p className="property-description">Imagem adicionada: {selectedElement.name}</p>
                   <label className="field-label" htmlFor="image-size">Tamanho — {selectedElement.size || 70}%</label>
                   <input id="image-size" className="range-input" type="range" min="20" max="100" value={selectedElement.width || selectedElement.size || 70} onChange={(event) => updateElement(selectedId, { size: Number(event.target.value), width: Number(event.target.value) })} />
-                  <label className="field-label" htmlFor="image-alignment">Posição</label>
-                  <select id="image-alignment" className="text-input" value={selectedElement.alignment || 'center'} onChange={(event) => updateElement(selectedId, { alignment: event.target.value })}>
-                    <option value="left">Esquerda</option>
-                    <option value="center">Centro</option>
-                    <option value="right">Direita</option>
-                  </select>
                   <PhotoBorderControls element={selectedElement} onUpdate={updateElement} />
                 </>
               )}
@@ -874,12 +888,6 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
                   </button>
                   <label className="field-label" htmlFor="carousel-size">Tamanho — {selectedElement.size || 80}%</label>
                   <input id="carousel-size" className="range-input" type="range" min="30" max="100" value={selectedElement.width || selectedElement.size || 80} onChange={(event) => updateElement(selectedId, { size: Number(event.target.value), width: Number(event.target.value) })} />
-                  <label className="field-label" htmlFor="carousel-alignment">Posição</label>
-                  <select id="carousel-alignment" className="text-input" value={selectedElement.alignment || 'center'} onChange={(event) => updateElement(selectedId, { alignment: event.target.value })}>
-                    <option value="left">Esquerda</option>
-                    <option value="center">Centro</option>
-                    <option value="right">Direita</option>
-                  </select>
                   <PhotoBorderControls element={selectedElement} onUpdate={updateElement} />
                   <div className="carousel-photo-list">
                     {selectedElement.images.map((image, index) => (
@@ -1001,6 +1009,7 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
           <button
             type="button"
             key={category.id}
+            data-tour={`nav-${category.id}`}
             className={`editor-category-button${activeCategory === category.id && isSidePanelOpen ? ' active' : ''}`}
             aria-expanded={activeCategory === category.id && isSidePanelOpen}
             onClick={() => openCategory(category.id)}
@@ -1127,6 +1136,12 @@ function GiftEditor({ gift, setGift, saveError, canUndo, canRedo, onUndo, onRedo
           </div>
         </div>
       )}
+
+      <InteractiveTutorial
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onSelectCategory={openCategory}
+      />
     </main>
   )
 }
