@@ -26,13 +26,20 @@ function PublishPage({ gift, onBack, onHome }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(gift),
       })
-      const result = await response.json()
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Não foi possível publicar o presente.')
+      // A resposta pode não ser JSON (ex.: erro de proxy 502). Trata os dois casos.
+      let result = null
+      try {
+        result = await response.json()
+      } catch {
+        result = null
       }
 
-      if (!result.slug) {
+      if (!response.ok) {
+        throw new Error(result?.error || 'Não foi possível publicar o presente. Tente novamente em instantes.')
+      }
+
+      if (!result?.slug) {
         throw new Error('O servidor não retornou o link do presente.')
       }
 
